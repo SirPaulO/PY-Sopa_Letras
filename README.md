@@ -1,4 +1,4 @@
-# prog1-tp1-python-sopa_de_letras
+# Sopa de letras en Python
 Sopa de letras.
     - Idea del programa:
         El procesamiento de las palabras y el tablero esta pensado como vectores dentro de una matriz.
