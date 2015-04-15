@@ -21,16 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-"""
-
-import time
-import random
-import platform
-import os
-import string
-
-
-"""
 Sopa de letras.
     - Idea del programa:
         El procesamiento de las palabras y el tablero esta pensado como vectores dentro de una matriz.
@@ -61,6 +51,14 @@ Sopa de letras.
         4) Las palabras ingresadas deben tener una longitud minima de 3 caracteres, y una longitud maxima de N/2 caracteres
         5) Las coordenadas tienen el formato de "AN,AN" donde A es una letra y N un entero
 """
+
+# CODE START
+import time
+import random
+import platform
+import os
+import string
+
 
 #============== CLASS VARIABLES
 # Splash 10x10
@@ -165,6 +163,8 @@ def crear_matrix():
     """
     Crea la matriz de N filas/columnas
     """
+    global matrix
+    matrix =[]
     for i in range(nxn):
         matrix.append([])
         for e in range(nxn):
@@ -199,7 +199,7 @@ def valores_posicion(isrow, pos):
     - valores: Lista formada de a pares. Primer valor -> Int de la cantidad de espacios en blanco en la fila/columna hasta la primer letra encontrada.
                                          Segundo valor -> Letra encontrada
     """
-
+    
     valores = []
     espacios = 0
 
@@ -496,7 +496,7 @@ def procesar_juego(salteadas):
 
         try:
             posiciones.index(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
-            msg_to_show = "EXISTE LA PALABRA!"
+            posiciones.remove(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
 
             if vertical :
                 for fila in range(min(fila_inicio, fila_final),max(fila_inicio, fila_final)+1) : 
@@ -509,7 +509,7 @@ def procesar_juego(salteadas):
             msg_to_show = "Genial! encontraste una palabra!"
 
         except:
-            msg_to_show = "Mmm.. No se encontro ninguna palabra"
+            msg_to_show = "Mmm.. No se encontro ninguna palabra nueva en esas coordenadas"
 
     clear_window()
 
@@ -530,8 +530,10 @@ def juego_nuevo():
     global n_palabras
     global palabras_restantes
 
-    nxn         = pedir_entero("Ingrese UN numero entero de la cantidad de\nfilas y columnas que desea (Entre 10 y 20):\n",10,20)
+    nxn         = pedir_entero("Ingrese un numero entero de la cantidad de\nfilas y columnas que desea (Entre 10 y 20):\n",10,20)
     n_palabras  = pedir_entero("Ingrese un numero entero de la cantidad de\npalabas que deasea agregar (Entre 0 y %d):\n"%(nxn/2),0,(nxn/2))
+
+    palabras = []
 
     palabra_repetida = False
     while len(palabras)<n_palabras:
@@ -540,7 +542,7 @@ def juego_nuevo():
             show_msg("Ingreso una palabra repetida")
             palabra_repetida = False
 
-        palabra = pedir_palabra("Ingrese una palabra entre %d y %d caracteres: "%(palabra_min_caracteres,(nxn/2)),palabra_min_caracteres,(nxn/2))
+        palabra = pedir_palabra("[%d|%d]Ingrese una palabra entre %d y %d caracteres: "%(len(palabras)+1,n_palabras,palabra_min_caracteres,(nxn/2)),palabra_min_caracteres,(nxn/2))
 
         try:
             palabras.index(palabra)
@@ -578,7 +580,7 @@ def mostrar_acerca_de():
     show_msg("Tiempo de creacion aproximado 12 horas (aka 2 tardes)\n")
 
     raw_input("Enter para menu principal ")
-    clear_window()
+
     return True
 
 #============== Init
@@ -595,8 +597,10 @@ def menu_inicial():
 
         if item == 0 :
             juego_nuevo()
+            clear_window()
         elif item==1 :
             mostrar_acerca_de()
+            clear_window()
         elif item==2 :
             return
         else:
@@ -618,5 +622,4 @@ def main():
     menu_inicial()
 
 main()
-
 
