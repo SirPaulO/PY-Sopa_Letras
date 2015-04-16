@@ -75,9 +75,6 @@ splash =[
      [ "","","","","","","","","","" ]
      ]
 
-# Completamente inutil
-abecedario = ["A", "B", "C", "D", "E", "F", "G", "H", "I" , "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"] #, "U", "V", "W", "X", "Y", "Z"
-
 # Almacena cadenas, cada una compuesta por numeros que representan la ubicacion de las palabras en la matriz
 # una vez formada la cadena, sirve para comparar si existe una palabra en tal posicion.
 posiciones = []
@@ -157,6 +154,14 @@ def letra_aleatoria():
     """
     return random.choice(string.ascii_lowercase)
 
+def obtener_mensaje(identificador):
+    if identificador == "rawinput_coordenadas" : return "Ingrese Celdas de Inicio y Final de la palabra (EJ: A3,C4): "
+    if identificador == "entrada_incorrecta" : return "Entrada incorrecta. (EJ: A3,C4)"
+    if identificador == "rango_fila" : return "Fila fuera de rango"
+    if identificador == "rango_columna" : return "Columna fuera de rango"
+    if identificador == "fila_o_columa_igual" : return "Al menos fila o columna, inicial y final deben coincidir."
+    if identificador == "error_coordenadas" : return "Mmm.. No se encontro ninguna palabra nueva en ese par de coordenadas"
+    
 #============== Matriz
 
 def crear_matrix():
@@ -352,7 +357,7 @@ def mostrar_tablero(mtx, n):
     """
     fila = "/ |"
     for i in range(n):
-        fila = fila + " " + abecedario[i]
+        fila = fila + " " + chr(65+i)
     print fila
     print "-"*(2*n+3)
 
@@ -436,6 +441,9 @@ def procesar_juego(salteadas):
         clear_window()
 
         show_title("Encuentre las palabras")
+
+        # Si por parametro se indica que existen palabras salteadas, mostramos un mensaje
+
         if salteadas != None:
             show_msg("Palabras restantes: %d Salteadas: %d \n"%(palabras_restantes, salteadas))
         else:
@@ -443,49 +451,51 @@ def procesar_juego(salteadas):
 
         mostrar_tablero(matrix, nxn)
 
+        # Mostramos el mensaje y le agregamos una linea nueva
         if msg_to_show != "":
             show_msg(msg_to_show+"\n")
             msg_to_show = ""
 
-        entrada = raw_input("Ingrese Celdas de Inicio y Final de la palabra (EJ: A3,C4): ")
 
-        if len(entrada) < 5 or len(entrada) > 7:
-            msg_to_show = "Entrada incorrecta. (EJ: A3,C4)"
+        #============== Entrada y filtrado de texto
+
+        entrada = raw_input(obtener_mensaje("rawinput_coordenadas"))
+
+        if len(entrada) < 5 or len(entrada) > 7 or not "," in entrada:
+            msg_to_show = obtener_mensaje("entrada_incorrecta")
             continue
 
-        try:
-            entradas = entrada.split(",")
-        except:
-            msg_to_show = "Entrada incorrecta. (EJ: A3,C4)"
-            continue
+        entradas = entrada.split(",")
 
         if len(entradas) != 2 :
-            msg_to_show = "Entrada incorrecta. (EJ: A3,C4)"
+            msg_to_show = obtener_mensaje("entrada_incorrecta")
             continue
 
-        try:
-            columna_inicio = entradas[0][0]
-            fila_inicio    = int(entradas[0][1:])-1
-
-            columna_final = entradas[1][0]
-            fila_final    = int(entradas[1][1:])-1
-        except:
-            msg_to_show = "Entrada incorrecta. (EJ: A3,C4)"
+        if not str(entradas[0][1:]).isdigit() or not entradas[1][1:].isdigit() :
+            msg_to_show = obtener_mensaje("entrada_incorrecta")
             continue
+
+        #============== Parseo y filtrado de coordenadas
+
+        columna_inicio = entradas[0][0]
+        fila_inicio    = int(entradas[0][1:])-1
+
+        columna_final = entradas[1][0]
+        fila_final    = int(entradas[1][1:])-1
 
         if fila_final >= nxn or fila_inicio >= nxn :
-            msg_to_show = "Fila fuera de rango"
+            msg_to_show = obtener_mensaje("rango_fila")
             continue
 
-        try:
-            columna_inicio = abecedario.index(columna_inicio.upper())
-            columna_final  = abecedario.index(columna_final.upper())
-        except:
-            msg_to_show = "Columna fuera de rango"
+        if ord(columna_inicio.upper())-65 >= nxn or ord(columna_final.upper())-65 >= nxn :
+            msg_to_show = obtener_mensaje("rango_columna")
             continue
+        else:
+            columna_inicio = ord(columna_inicio.upper())-65
+            columna_final  = ord(columna_final.upper())-65
 
         if columna_inicio != columna_final and fila_inicio != fila_final :
-            msg_to_show = "Al menos fila o columna, inicial y final deben coincidir."
+            msg_to_show = obtener_mensaje("fila_o_columa_igual")
             continue
 
         if columna_inicio == columna_final :
@@ -493,29 +503,39 @@ def procesar_juego(salteadas):
         else:
             vertical = False
 
+        # Se arma una cadena con las coordenadas de la misma forma como fue agregada anteriormente a la lista "posiciones"
+        cadena_de_posicion = str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final)
 
-        try:
-            posiciones.index(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
-            posiciones.remove(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
+        #============== Comprobar si existe la palabra. Removerla en caso afirmativo
 
-            if vertical :
-                for fila in range(min(fila_inicio, fila_final),max(fila_inicio, fila_final)+1) : 
-                    matrix[fila][columna_final] = str(matrix[fila][columna_final]).upper()
-            else:
-                for columna in range(min(columna_inicio, columna_final),max(columna_inicio, columna_final)+1) :
-                    matrix[fila_inicio][columna] = str(matrix[fila_inicio][columna]).upper()
+        if not cadena_de_posicion in posiciones :
+            msg_to_show = obtener_mensaje("error_coordenadas")
+            continue
 
-            palabras_restantes -=1
-            msg_to_show = "Genial! encontraste una palabra!"
+        posiciones.remove(cadena_de_posicion)
 
-        except:
-            msg_to_show = "Mmm.. No se encontro ninguna palabra nueva en esas coordenadas"
+        #============== Mostrar la palabra en mayuscula
+
+        if vertical :
+            for fila in range(min(fila_inicio, fila_final),max(fila_inicio, fila_final)+1) : 
+                matrix[fila][columna_final] = str(matrix[fila][columna_final]).upper()
+        else:
+            for columna in range(min(columna_inicio, columna_final),max(columna_inicio, columna_final)+1) :
+                matrix[fila_inicio][columna] = str(matrix[fila_inicio][columna]).upper()
+
+
+        palabras_restantes -=1
+        msg_to_show = "Muy Bien! Encontraste una palabra!"
+
+
+    #============== FIN DEL JUEGO
 
     clear_window()
 
     show_title("FELICIDADES! GANASTE!")
     show_msg("Muy bien, encontraste las %d palabras!" % n_palabras)
     raw_input("Enter para menu principal ")
+
     return True
 
 #============== Opciones del menu
@@ -542,6 +562,7 @@ def juego_nuevo():
             show_msg("Ingreso una palabra repetida")
             palabra_repetida = False
 
+        # Pedir una palabra que cumpla con los requisitos
         palabra = pedir_palabra("[%d|%d]Ingrese una palabra entre %d y %d caracteres: "%(len(palabras)+1,n_palabras,palabra_min_caracteres,(nxn/2)),palabra_min_caracteres,(nxn/2))
 
         try:
