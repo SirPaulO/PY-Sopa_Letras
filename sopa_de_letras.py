@@ -107,6 +107,7 @@ def show_msg(msg) :
     """
     print "#" * 5, msg
 
+
 def show_title(msg):
     """
     Para darle un formato particular a todos los titulos
@@ -225,26 +226,24 @@ def valores_posicion(isrow, pos):
                 espacios+=1
 
     # Si la fila/columna esta vacia, indicar que existen nxn espacios vacios
-    if espacios == nxn : valores.append(espacios)
+    if espacios == nxn :
+        valores.append(espacios)
+        valores.append("0")
 
     return valores
 
-def procesar_palabras(palabras):
+def procesar_palabras():
     """
     Acomoda las palabras en la matriz tablero de manera semi-aleatoria: 
 
-        Para acomodar las palabras se les asigna un sentido, una direccion y una posicion aleatoria dentro de la matrix.
-        Se pide informacion de tal fila/columna a la funcion "valores_posicion" hasta que la palabra en cuestion pueda ser correctamente acomodada dentro de la matrix.
+        Para acomodar las palabras se les asigna un sentido, una direccion y una posicion aleatoria dentro de la matriz.
+        Se pide informacion de tal fila/columna a la funcion "valores_posicion" hasta que la palabra en cuestion pueda ser correctamente acomodada dentro de la matriz.
         Si la palabra no puede ser acomodada en la fila/columna random, con la direccion random, se prueba en la siguiente fila/columna con la misma direccion; una vez
         recorridas todas las filas/columnas, cambia la direccion y prueba nuevamente una por una. Si tampoco sirve, se saltea la palabra
 
     Las primeras dos palabras cumplen con ciertas condiciones:
         1) La primer palabra debe tener direccion vertical y estar posicionada de arriba hacia abajo
         2) La segunda palabra debe tener direccion horizontal y estar posicionada de derecha a izquierda
-    
-
-    Params:
-        - palabras: Lista de palabras para colocar en el tablero
 
     Vars:
         - direccion: False para horizontal | True para vertical
@@ -255,6 +254,8 @@ def procesar_palabras(palabras):
         - None: Si se ubicaron todas las palabras
         - Int: Si hubieron palabras que no fueron ubicadas
     """
+
+    salteadas = 0
     for i in range(len(palabras)):
 
         posicion_inicial = random.randint(0,nxn-1)
@@ -274,46 +275,49 @@ def procesar_palabras(palabras):
         if sentido_inverso:
             palabras[i] = palabras[i][::-1]
 
-        salteadas = 0
-
         while(True):
+
+            # Siempre Par
             valores_en_posicion = valores_posicion(direccion, posicion)
+            colocada = False
+            for e in range(len(valores_en_posicion)/2):
+                # Si el espacio para acomodar la palabra es mayor en longitud, se le agrega un margen random a la palabra
+                if int(valores_en_posicion[e*2]) >= len(palabras[i]) :
+                    margen = int(valores_en_posicion[e*2]) - len(palabras[i])
+                    if margen > 0:
+                        inicio = random.randint(0,margen)
 
-            # Si el espacio para acomodar la palabra es mayor en longitud, se le agrega un margen random a la palabra
-            if int(valores_en_posicion[0]) >= len(palabras[i]) :
-                margen = int(valores_en_posicion[0]) - len(palabras[i])
-                if margen > 0:
-                    inicio = random.randint(0,margen)
+                    if colocar_palabra(palabras[i], direccion, posicion, margen) :
 
-                if colocar_palabra(palabras[i], direccion, posicion, margen) :
+                        if direccion :
+                            fila_inicio = posicion
+                            columna_inicio = margen
 
-                    if direccion :
-                        fila_inicio = posicion
-                        columna_inicio = margen
+                            fila_final = posicion
+                            columna_final = margen + len(palabras[i])-1
+                        else:
+                            columna_inicio = posicion
+                            fila_inicio = margen
 
-                        fila_final = posicion
-                        columna_final = margen + len(palabras[i])-1
-                    else:
-                        columna_inicio = posicion
-                        fila_inicio = margen
+                            columna_final = posicion
+                            fila_final = margen + len(palabras[i])-1
 
-                        columna_final = posicion
-                        fila_final = margen + len(palabras[i])-1
+                        if sentido_inverso :
+                            aux = fila_final
+                            fila_final = fila_inicio
+                            fila_inicio = aux
 
-                    if sentido_inverso :
-                        aux = fila_final
-                        fila_final = fila_inicio
-                        fila_inicio = aux
+                            aux = columna_final
+                            columna_final = columna_inicio
+                            columna_inicio = aux
+                            
+                        # Alternativa para hacer "legible" las posiciones
+                        # posiciones.append(str(columna_inicio)+","+str(fila_inicio)+":"+str(columna_final)+","+str(fila_final))
+                        posiciones.append(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
+                        colocada = True
+                        break
 
-                        aux = columna_final
-                        columna_final = columna_inicio
-                        columna_inicio = aux
-                        
-                    # Alternativa para hacer "legible" las posiciones
-                    # posiciones.append(str(columna_inicio)+","+str(fila_inicio)+":"+str(columna_final)+","+str(fila_final))
-                    posiciones.append(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
-                    break
-            else:
+            if not colocada:
                 # Si en esa posicion no entra, probar en la siguiente
                 if posicion < nxn-1: posicion += 1
                 else: posicion = 0
@@ -355,12 +359,13 @@ def mostrar_tablero(mtx, n):
     """
     Muestra la matriz en forma de tablero, con letras para indicar las columnas y numeros para indicar las filas
     """
+    # Cabecera de Columnas
     fila = "/ |"
     for i in range(n):
         fila = fila + " " + chr(65+i)
     print fila
     print "-"*(2*n+3)
-
+    # Cabecera de Filas
     for i in range(n):
         fila = str(i+1)
         if i < 9 : fila += " |"
@@ -371,6 +376,7 @@ def mostrar_tablero(mtx, n):
         print fila
         fila = ""
 
+    # Nueva linea
     print ""
 
 #============== Ingreso de datos
@@ -565,17 +571,16 @@ def juego_nuevo():
         # Pedir una palabra que cumpla con los requisitos
         palabra = pedir_palabra("[%d|%d]Ingrese una palabra entre %d y %d caracteres: "%(len(palabras)+1,n_palabras,palabra_min_caracteres,(nxn/2)),palabra_min_caracteres,(nxn/2))
 
-        try:
-            palabras.index(palabra)
+        if palabra in palabras:
             palabra_repetida = True
-        except:
+        else :
             palabras.append(palabra)
 
     palabras_restantes = n_palabras
 
     crear_matrix()
 
-    salteadas = procesar_palabras(palabras)
+    salteadas = procesar_palabras()
 
     completar_matrix(matrix, nxn, not debug_palabras)
 
@@ -637,7 +642,7 @@ def main():
     if platform.system()    == "Windows" : clear_command = "cls"
     elif platform.system() == "Linux"    : clear_command = "clear"
 
-    time.sleep(3)                # Duerme 5 segundos
+    time.sleep(3)                # Duerme 3 segundos
 
     clear_window()
     menu_inicial()
