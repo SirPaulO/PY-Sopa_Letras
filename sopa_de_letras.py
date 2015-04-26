@@ -55,162 +55,50 @@ Sopa de letras.
 # CODE START
 import time
 import random
-import platform
-import os
 import string
 
-
-#============== CLASS VARIABLES
-# Splash 10x10
-splash =[
-     [ "","","","","","","","","","" ],
-     [ "","","","","","","","","","" ],
-     [ "","S","U","P","E","R","","","","" ],
-     [ "","","","","","","","","","" ],
-     [ "","","","S","O","P","A","","","" ],
-     [ "","","","","","","","","","" ],
-     [ "","","","","D","E","","","","" ],
-     [ "","","","","","","","","","" ],
-     [ "","","L","E","T","R","A","S","","" ],
-     [ "","","","","","","","","","" ]
-     ]
-
-# Almacena cadenas, cada una compuesta por numeros que representan la ubicacion de las palabras en la matriz
-# una vez formada la cadena, sirve para comparar si existe una palabra en tal posicion.
-posiciones = []
-
-# A.K.A Tablero
-matrix = []
-
-# Comando de sistema para "limpiar" la consola. Varia dependiendo el sistema
-clear_command = ""
-
-# Cantidad de palabras en el tablero
-n_palabras = 0
-
-# Cantidad de filas/columnas del tablero
-nxn = 0
-
-# ...
-palabra_min_caracteres = 3
-palabras_restantes = 0
-palabras = []
-
-# True para mostrar las palabras en MAYUSCULAS en el tablero y completar con asteriscos
-debug_palabras = False
-
 #============== Utilidad
-
-def show_msg(msg) :
-    """
-    Para darle un formato particular a todos los mensajes
-    """
-    print "#" * 5, msg
-
-
-def show_title(msg):
-    """
-    Para darle un formato particular a todos los titulos
-    """
-    # Valor 70 elegido completamente a gusto
-    # (70/2)-1 = 34
-    print "="*70
-    print "=" * ( 34 - (len(msg)/2) ), msg, "=" * ( 34 - (len(msg)/2) )
-    print "="*70
-
-def show_menu(items):
-    """
-    Muestra los items que le son pasados y devuelve un entero en representacion de la opcion seleccionada
-
-    Params:
-        - items: lista de cadenas para mostrar como items
-    Return: Entero
-    """
-    for i in range(len(items)):
-        print "[" + str(i+1) +"]", items[i]
-            
-    while True:
-        item = str(raw_input("<<< "))
-
-        if not item.isdigit() :
-            show_msg("Opcion Incorrecta")
-            continue
-        
-        item = int(item)-1
-        if item > -1 and item < len(items) :
-            return item
-        else:
-            show_msg("Opcion Incorrecta")
-
-def clear_window():
-    """
-    "Limpia" la ventana de comando
-    """
-    if clear_command != "" :
-        os.system(clear_command)
-
-def letra_aleatoria():
-    """
-    Devuelve una letra minuscula al azar
-    """
-    return random.choice(string.ascii_lowercase)
-
-def obtener_mensaje(identificador):
-    if identificador == "rawinput_coordenadas" : return "Ingrese Celdas de Inicio y Final de la palabra (EJ: A3,C4): "
-    if identificador == "entrada_incorrecta" : return "Entrada incorrecta. (EJ: A3,C4)"
-    if identificador == "rango_fila" : return "Fila fuera de rango"
-    if identificador == "rango_columna" : return "Columna fuera de rango"
-    if identificador == "fila_o_columa_igual" : return "Al menos fila o columna, inicial y final deben coincidir."
-    if identificador == "error_coordenadas" : return "Mmm.. No se encontro ninguna palabra nueva en ese par de coordenadas"
+from util import *
     
 #============== Matriz
 
-def crear_matrix():
-    """
-    Crea la matriz de N filas/columnas
-    """
-    global matrix
+def crear_matrix(nxn):
+    """Devuelve matrix de nxn filas/columnas."""
     matrix =[]
     for i in range(nxn):
         matrix.append([])
         for e in range(nxn):
             matrix[i].append("")
-    return True
+    return matrix
 
 def completar_matrix(mtx, n, randomChar=True):
-    """
-    Completa la matriz con letras aleatorias o con asteriscos
+    """Completa y devuelve una matriz con letras aleatorias o con asteriscos.
 
-    Params:
-        - mtx: matriz a completar
-        - n: entero de filas/columnas a completar
-        - randomChar: define si son letras aleatorias o asteriscos
+    Parametros:
+    mtx        -- matriz a completar
+    n          -- entero de filas/columnas a completar
+    randomChar -- booleano que indica si son letras aleatorias o asteriscos
     """
     for i in range(n):
         for e in range(n):
             if randomChar :
-                if mtx[i][e] == "" : mtx[i][e] = letra_aleatoria()
+                if mtx[i][e] == "" : mtx[i][e] = random.choice(string.ascii_lowercase)
             else:
                 if mtx[i][e] == "" : mtx[i][e] = "*"
 
-def valores_posicion(isrow, pos):
-    """
-    Devuelve una lista con informacion acerca de una fila/columna de la matriz tablero
+    return mtx
 
-    Params:
-    - isrow: Bool -> True para Fila | False para Columna
-    - pos: Int indicando fila/columna
+def valores_posicion(matrix, nxn, isrow, pos):
+    """Devuelve una lista con informacion acerca de una fila/columna especifica de la matriz.
 
-    Return:
-    - valores: Lista formada de a pares. Primer valor -> Int de la cantidad de espacios en blanco en la fila/columna hasta la primer letra encontrada.
-                                         Segundo valor -> Letra encontrada
+    Parametros:
+    isrow -- booleano que indica si es fila o columna
+    pos   -- entero que indica fila/columna
     """
     
     valores = []
     espacios = 0
-
     for i in range(nxn):
-
         if isrow:
             if matrix[pos][i] != "":
                 valores.append(espacios)
@@ -232,32 +120,32 @@ def valores_posicion(isrow, pos):
 
     return valores
 
-def procesar_palabras():
-    """
-    Acomoda las palabras en la matriz tablero de manera semi-aleatoria: 
+def procesar_palabras(matrix, nxn, palabras):
+    """Acomoda las palabras en la matriz tablero, y la devuelve junto a una lista de posiciones y entero de las palabras salteadas.
 
-        Para acomodar las palabras se les asigna un sentido, una direccion y una posicion aleatoria dentro de la matriz.
-        Se pide informacion de tal fila/columna a la funcion "valores_posicion" hasta que la palabra en cuestion pueda ser correctamente acomodada dentro de la matriz.
-        Si la palabra no puede ser acomodada en la fila/columna random, con la direccion random, se prueba en la siguiente fila/columna con la misma direccion; una vez
-        recorridas todas las filas/columnas, cambia la direccion y prueba nuevamente una por una. Si tampoco sirve, se saltea la palabra
+    Para acomodar las palabras se les asigna un sentido, una direccion y una posicion aleatoria dentro de la matriz.
+    Se pide informacion de tal fila/columna a la funcion "valores_posicion" hasta que la palabra en cuestion pueda ser correctamente acomodada dentro de la matriz.
+    Si la palabra no puede ser acomodada en la fila/columna random, con la direccion random, se prueba en la siguiente fila/columna con la misma direccion; una vez
+    recorridas todas las filas/columnas, cambia la direccion y prueba nuevamente una por una. Si tampoco sirve, se saltea la palabra
 
     Las primeras dos palabras cumplen con ciertas condiciones:
-        1) La primer palabra debe tener direccion vertical y estar posicionada de arriba hacia abajo
-        2) La segunda palabra debe tener direccion horizontal y estar posicionada de derecha a izquierda
+    1) La primer palabra debe tener direccion vertical y estar posicionada de arriba hacia abajo
+    2) La segunda palabra debe tener direccion horizontal y estar posicionada de derecha a izquierda
 
-    Vars:
-        - direccion: False para horizontal | True para vertical
-        - posicion: fila o columna en la que colocar la palabra
-        - sentido_inverso: False para normal | True para invertir la palabra
-
-    Return:
-        - None: Si se ubicaron todas las palabras
-        - Int: Si hubieron palabras que no fueron ubicadas
+    Parametros:
+    matrix   -- matriz en la que procesar las palabras
+    nxn      -- entero que indica la longitud de la matrix
+    palabras -- lista de palabras para procesar
     """
 
     salteadas = 0
-    for i in range(len(palabras)):
+    posiciones = []
 
+    # direccion       -- booleano que indica la direccion de la palabra
+    # posicion        -- entero que indica fila o columna en la que colocar la palabra
+    # sentido_inverso -- booleano que indica el sentido de la palabra
+
+    for i in range(len(palabras)):
         posicion_inicial = random.randint(0,nxn-1)
         sentido_inverso = bool(random.randint(0,1))
 
@@ -275,11 +163,11 @@ def procesar_palabras():
         if sentido_inverso:
             palabras[i] = palabras[i][::-1]
 
-        while(True):
-
+        colocada = False
+        while(not colocada):
             # Siempre Par
-            valores_en_posicion = valores_posicion(direccion, posicion)
-            colocada = False
+            valores_en_posicion = valores_posicion(matrix, nxn, direccion, posicion)
+            
             for e in range(len(valores_en_posicion)/2):
                 # Si el espacio para acomodar la palabra es mayor en longitud, se le agrega un margen random a la palabra
                 if int(valores_en_posicion[e*2]) >= len(palabras[i]) :
@@ -287,37 +175,39 @@ def procesar_palabras():
                     if margen > 0:
                         inicio = random.randint(0,margen)
 
-                    if colocar_palabra(palabras[i], direccion, posicion, margen) :
+                    matrix = colocar_palabra(matrix, palabras[i], direccion, posicion, margen)
 
-                        if direccion :
-                            fila_inicio = posicion
-                            columna_inicio = margen
+                    if direccion :
+                        fila_inicio = posicion
+                        columna_inicio = margen
 
-                            fila_final = posicion
-                            columna_final = margen + len(palabras[i])-1
-                        else:
-                            columna_inicio = posicion
-                            fila_inicio = margen
+                        fila_final = posicion
+                        columna_final = margen + len(palabras[i])-1
+                    else:
+                        columna_inicio = posicion
+                        fila_inicio = margen
 
-                            columna_final = posicion
-                            fila_final = margen + len(palabras[i])-1
+                        columna_final = posicion
+                        fila_final = margen + len(palabras[i])-1
 
-                        if sentido_inverso :
-                            aux = fila_final
-                            fila_final = fila_inicio
-                            fila_inicio = aux
+                    if sentido_inverso :
+                        aux = fila_final
+                        fila_final = fila_inicio
+                        fila_inicio = aux
 
-                            aux = columna_final
-                            columna_final = columna_inicio
-                            columna_inicio = aux
-                            
-                        # Alternativa para hacer "legible" las posiciones
-                        # posiciones.append(str(columna_inicio)+","+str(fila_inicio)+":"+str(columna_final)+","+str(fila_final))
-                        posiciones.append(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
-                        colocada = True
-                        break
+                        aux = columna_final
+                        columna_final = columna_inicio
+                        columna_inicio = aux
+                        
+                    # Alternativa para hacer "legible" las posiciones
+                    # posiciones.append(str(columna_inicio)+","+str(fila_inicio)+":"+str(columna_final)+","+str(fila_final))
+                    posiciones.append(str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final))
+                    colocada = True
+                    print "colocada"
+                    break
 
             if not colocada:
+                print "no colocada"
                 # Si en esa posicion no entra, probar en la siguiente
                 if posicion < nxn-1: posicion += 1
                 else: posicion = 0
@@ -332,12 +222,12 @@ def procesar_palabras():
                         # Si, "Break" porque el while esta dentro del For.
                         break
 
-    if salteadas != 0 : return salteadas
-    else: return None
+    
+    if salteadas != 0 : return matrix,posiciones,salteadas
+    else: return matrix,posiciones,0
 
-def colocar_palabra(palabra, esfila, pos, inicio) :
-    """
-    Coloca la palabra dentro de la matriz en la fila/columna especificada.
+def colocar_palabra(matrix, palabra, esfila, pos, inicio) :
+    """Coloca la palabra dentro de la matriz en la fila/columna especificada.
 
     Params:
         - palabra: cadena a ubicar
@@ -345,20 +235,15 @@ def colocar_palabra(palabra, esfila, pos, inicio) :
         - pos: posicion de la fila/columna
         - inicio: margen que tiene desde el inicio de la fila/columna
     """
-    if debug_palabras :
-        palabra = palabra.upper()
-
     for x in range(inicio, inicio+len(palabra) ) :
         if esfila:
             matrix[pos][x] = palabra[x-inicio]
         else:
             matrix[x][pos] = palabra[x-inicio]
-    return True
+    return matrix
 
 def mostrar_tablero(mtx, n):
-    """
-    Muestra la matriz en forma de tablero, con letras para indicar las columnas y numeros para indicar las filas
-    """
+    """Imprime la matriz en forma de tablero, con letras para indicar las columnas y numeros para indicar las filas."""
     # Cabecera de Columnas
     fila = "/ |"
     for i in range(n):
@@ -382,13 +267,12 @@ def mostrar_tablero(mtx, n):
 #============== Ingreso de datos
 
 def pedir_entero(msg, min, max):
-    """
-    Muestra un mensaje y solo acepta enteros entre param:min y param:max
+    """Devuelve entero aceptado entre los definidos por parametros.
 
-    Params:
-        - msg: Mensaje para mostrar
-        - min: entero minimo para aceptar
-        - max: entero maximo para aceptar
+    Parametros:
+    msg -- mensaje para mostrar
+    min -- entero minimo para aceptar
+    max -- entero maximo para aceptar
     """
     while True:
         n = str(raw_input(msg))
@@ -406,13 +290,12 @@ def pedir_entero(msg, min, max):
             continue
 
 def pedir_palabra(msg, min, max):
-    """
-    Muestra un mensaje y solo acepta palabras con longitud entre param:min y param:max
+    """Devuelve cadena aceptada con longitud entre la definida por parametros.
 
-    Params:
-        - msg: Mensaje para mostrar
-        - min: longitud entera minimo para aceptar
-        - max: longitud entera maxima para aceptar
+    Parametros:
+    msg -- mensaje para mostrar
+    min -- longitud entera minima para aceptar
+    max -- longitud entera maxima para aceptar
     """
 
     while True:
@@ -431,15 +314,88 @@ def pedir_palabra(msg, min, max):
         else:
             return txt.lower()
 
-def procesar_juego(salteadas):
-    """
-    Una vez iniciado el juego, se toman las entradas del jugador para procesar y determinar si pertenecen a coordenadas validas de palabras
+def pedir_coordenadas():
+    """Devuelve una cadena con las coordenadas y direccion de la palabra si son validas, o falso y un mensaje de error."""
 
-    Params:
-        - Salteadas: cantidad de palabras salteadas para mostrar en un mensaje
+    entrada = raw_input(obtener_mensaje("rawinput_coordenadas"))
+
+    # Las coordenadas deben tener un minimo de 5 caractes y un maximo de 7, dada la manera en la que estan escritas (A10,A20)
+    # PD: No son numeros magicos.
+
+    if len(entrada) < 5 or len(entrada) > 7 or not "," in entrada:
+        return False, obtener_mensaje("entrada_incorrecta")
+
+    entradas = entrada.split(",")
+
+    if len(entradas) != 2 :
+        return False, obtener_mensaje("entrada_incorrecta")
+
+    if not str(entradas[0][1:]).isdigit() or not entradas[1][1:].isdigit() :
+        return False, obtener_mensaje("entrada_incorrecta")
+
+    return entradas, ""
+
+def procesar_coordenadas(entradas, nxn, posiciones, matrix):
+    """Devuelve la matriz modificada si las coordenadas dadas refieren a una palabra, mostrandola en mayuscula y la remueve de posiciones."""
+    columna_inicio = entradas[0][0]
+    fila_inicio    = int(entradas[0][1:])-1
+
+    columna_final = entradas[1][0]
+    fila_final    = int(entradas[1][1:])-1
+
+    if fila_final >= nxn or fila_inicio >= nxn :
+        return False, obtener_mensaje("rango_fila"), posiciones, matrix
+
+    # 65 es el valor decimal de la letra A en la tabla ASCII, la cual coincide con el origen de coordenadas de nuestro tablero.
+    if ord(columna_inicio.upper())-65 >= nxn or ord(columna_final.upper())-65 >= nxn :
+        return False, obtener_mensaje("rango_columna"), posiciones, matrix
+    else:
+        columna_inicio = ord(columna_inicio.upper())-65
+        columna_final  = ord(columna_final.upper())-65
+
+    if columna_inicio != columna_final and fila_inicio != fila_final :
+        return False, obtener_mensaje("fila_o_columa_igual"), posiciones, matrix
+
+    if columna_inicio == columna_final :
+        vertical = True
+    else:
+        vertical = False
+
+    # Se arma una cadena con las coordenadas de la misma forma como fue agregada anteriormente a la lista "posiciones"
+    cadena_de_posicion = str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final)
+
+    #============== Comprobar si existe la palabra. Removerla en caso afirmativo
+
+    if not cadena_de_posicion in posiciones :
+        return False, obtener_mensaje("error_coordenadas"), posiciones, matrix
+
+    posiciones.remove(cadena_de_posicion)
+
+    #============== Mostrar la palabra en mayuscula
+
+    if vertical :
+        for fila in range(min(fila_inicio, fila_final),max(fila_inicio, fila_final)+1) : 
+            matrix[fila][columna_final] = str(matrix[fila][columna_final]).upper()
+    else:
+        for columna in range(min(columna_inicio, columna_final),max(columna_inicio, columna_final)+1) :
+            matrix[fila_inicio][columna] = str(matrix[fila_inicio][columna]).upper()
+
+    return True, "", posiciones, matrix
+
+def procesar_juego(matrix,nxn,n_palabras,salteadas,posiciones):
+    """Devuelve el estado del juego cuando este termina.
+
+    La parte de procesado se encarga de verificar que se hayan encontrado todas las palabras o que el se haya rendido.
+
+    Parametros:
+    matrix     -- matrix tablero para procesar
+    nxn        -- dimension de la matriz tablero
+    n_palabras -- cantidad de palabras en la matriz
+    salteadas  -- cantidad de palabras salteadas para mostrar en un mensaje
+    posiciones -- posiciones de las palabras
     """
 
-    global palabras_restantes
+    palabras_restantes = n_palabras
     msg_to_show = ""
     
     while palabras_restantes > 0:
@@ -462,79 +418,21 @@ def procesar_juego(salteadas):
             show_msg(msg_to_show+"\n")
             msg_to_show = ""
 
+        coordenadas, msg_to_show = pedir_coordenadas()
+        if not coordenadas : continue
 
-        #============== Entrada y filtrado de texto
+        encontrada, msg_to_show, posiciones, matrix = procesar_coordenadas(coordenadas, nxn, posiciones, matrix)
 
-        entrada = raw_input(obtener_mensaje("rawinput_coordenadas"))
-
-        if len(entrada) < 5 or len(entrada) > 7 or not "," in entrada:
-            msg_to_show = obtener_mensaje("entrada_incorrecta")
-            continue
-
-        entradas = entrada.split(",")
-
-        if len(entradas) != 2 :
-            msg_to_show = obtener_mensaje("entrada_incorrecta")
-            continue
-
-        if not str(entradas[0][1:]).isdigit() or not entradas[1][1:].isdigit() :
-            msg_to_show = obtener_mensaje("entrada_incorrecta")
-            continue
-
-        #============== Parseo y filtrado de coordenadas
-
-        columna_inicio = entradas[0][0]
-        fila_inicio    = int(entradas[0][1:])-1
-
-        columna_final = entradas[1][0]
-        fila_final    = int(entradas[1][1:])-1
-
-        if fila_final >= nxn or fila_inicio >= nxn :
-            msg_to_show = obtener_mensaje("rango_fila")
-            continue
-
-        if ord(columna_inicio.upper())-65 >= nxn or ord(columna_final.upper())-65 >= nxn :
-            msg_to_show = obtener_mensaje("rango_columna")
-            continue
+        if not encontrada : continue
         else:
-            columna_inicio = ord(columna_inicio.upper())-65
-            columna_final  = ord(columna_final.upper())-65
+            palabras_restantes -= 1
+            msg_to_show = "Muy Bien! Encontraste una palabra!"
 
-        if columna_inicio != columna_final and fila_inicio != fila_final :
-            msg_to_show = obtener_mensaje("fila_o_columa_igual")
-            continue
+    mostrar_fin_juego(n_palabras)
+    return True
 
-        if columna_inicio == columna_final :
-            vertical = True
-        else:
-            vertical = False
-
-        # Se arma una cadena con las coordenadas de la misma forma como fue agregada anteriormente a la lista "posiciones"
-        cadena_de_posicion = str(columna_inicio)+str(fila_inicio)+str(columna_final)+str(fila_final)
-
-        #============== Comprobar si existe la palabra. Removerla en caso afirmativo
-
-        if not cadena_de_posicion in posiciones :
-            msg_to_show = obtener_mensaje("error_coordenadas")
-            continue
-
-        posiciones.remove(cadena_de_posicion)
-
-        #============== Mostrar la palabra en mayuscula
-
-        if vertical :
-            for fila in range(min(fila_inicio, fila_final),max(fila_inicio, fila_final)+1) : 
-                matrix[fila][columna_final] = str(matrix[fila][columna_final]).upper()
-        else:
-            for columna in range(min(columna_inicio, columna_final),max(columna_inicio, columna_final)+1) :
-                matrix[fila_inicio][columna] = str(matrix[fila_inicio][columna]).upper()
-
-
-        palabras_restantes -=1
-        msg_to_show = "Muy Bien! Encontraste una palabra!"
-
-
-    #============== FIN DEL JUEGO
+def mostrar_fin_juego(n_palabras):
+    """Imprime un mensaje de fin de juego."""
 
     clear_window()
 
@@ -542,26 +440,20 @@ def procesar_juego(salteadas):
     show_msg("Muy bien, encontraste las %d palabras!" % n_palabras)
     raw_input("Enter para menu principal ")
 
-    return True
-
 #============== Opciones del menu
 
 def juego_nuevo():
-    """
-    Pedir al jugador la cantidad de filas/columnas, cantidad de palabras y las palabras.
-    """
+    """Pide al jugador la cantidad de filas/columnas, cantidad de palabras y las palabras."""
     show_title("Crear sopa de NxN letras")
-
-    global nxn
-    global n_palabras
-    global palabras_restantes
 
     nxn         = pedir_entero("Ingrese un numero entero de la cantidad de\nfilas y columnas que desea (Entre 10 y 20):\n",10,20)
     n_palabras  = pedir_entero("Ingrese un numero entero de la cantidad de\npalabas que deasea agregar (Entre 0 y %d):\n"%(nxn/2),0,(nxn/2))
 
     palabras = []
 
+    palabra_min_caracteres = 3
     palabra_repetida = False
+
     while len(palabras)<n_palabras:
 
         if palabra_repetida :
@@ -576,20 +468,16 @@ def juego_nuevo():
         else :
             palabras.append(palabra)
 
-    palabras_restantes = n_palabras
+    matrix = crear_matrix(nxn)
 
-    crear_matrix()
+    matrix,posiciones,salteadas = procesar_palabras(matrix, nxn, palabras)
 
-    salteadas = procesar_palabras()
+    matrix = completar_matrix(matrix, nxn)
 
-    completar_matrix(matrix, nxn, not debug_palabras)
-
-    return procesar_juego(salteadas)
+    return procesar_juego(matrix,nxn,n_palabras,salteadas,posiciones)
 
 def mostrar_acerca_de():
-    """
-    Muestra un mensaje de parte del desarrollador.
-    """
+    """Imprime un mensaje de parte del desarrollador."""
 
     show_title("Informacion del Juego")
 
@@ -612,7 +500,7 @@ def mostrar_acerca_de():
 #============== Init
 
 def menu_inicial():
-
+    """Imprime el menu inial con sus opciones."""
     clear_window()
     items = ["Juego Nuevo", "Acerca de", "Salir"]
 
@@ -633,14 +521,25 @@ def menu_inicial():
             print "Opcion invalida"
 
 def main():
+    """Imprime splash screen y llama al menu inicial."""
     show_title("BENVENID@ A")
+
+    # Splash 10x10
+    splash =[
+         [ "","","","","","","","","","" ],
+         [ "","","","","","","","","","" ],
+         [ "","S","U","P","E","R","","","","" ],
+         [ "","","","","","","","","","" ],
+         [ "","","","S","O","P","A","","","" ],
+         [ "","","","","","","","","","" ],
+         [ "","","","","D","E","","","","" ],
+         [ "","","","","","","","","","" ],
+         [ "","","L","E","T","R","A","S","","" ],
+         [ "","","","","","","","","","" ]
+         ]
+
     completar_matrix(splash, 10, False) # FIXED
     mostrar_tablero(splash, 10)  # FIXED
-
-    global clear_command
-
-    if platform.system()    == "Windows" : clear_command = "cls"
-    elif platform.system() == "Linux"    : clear_command = "clear"
 
     time.sleep(3)                # Duerme 3 segundos
 
